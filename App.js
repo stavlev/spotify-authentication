@@ -69,7 +69,8 @@ app.get('/callback', function(req, res) {
             querystring.stringify({
                 error: 'state_mismatch'
             }));
-    } else {
+    }
+    else {
         res.clearCookie(stateKey);
         var authOptions = {
             url: 'https://accounts.spotify.com/api/token',
@@ -84,7 +85,9 @@ app.get('/callback', function(req, res) {
             json: true
         };
 
-        request.post(authOptions, function(error, response, body) {
+        var loggedInUserId = '';
+
+        /*request.post(authOptions, function(error, response, body) {
             if (!error && response.statusCode === 200) {
 
                 var access_token = body.access_token,
@@ -99,7 +102,48 @@ app.get('/callback', function(req, res) {
                 // use the access token to access the Spotify Web API
                 request.get(options, function(error, response, body) {
                     console.log(body);
-                });
+                });*/
+
+////////////////////////////////////////////////////////////////////////////////////
+
+            request.post(authOptions, function(error, response, body) {
+                if (!error && response.statusCode === 200) {
+                    var access_token = body.access_token,
+                        refresh_token = body.refresh_token;
+                    var loggedInUserId = body.id;
+
+                    var playlistsRequestParams = {
+                        url: 'https://api.spotify.com/v1/users/' + loggedInUserId + '/playlists',
+                        headers: {
+                            'Authorization': 'Bearer ' + access_token,
+                            'scope': 'playlist-read-private',
+                            'response_type': 'code',
+                            'client_id': client_id,
+                            'redirect_uri': redirect_uri,
+                            'state': state
+                        },
+                        json: true
+                    };
+
+                    // use the access token to access the Spotify Web API
+                    request.get(playlistsRequestParams, function(error, response, body) {
+                        console.log(body);
+                    });
+
+            /*request.get(playlistsRequestParams, function(error, response, body) {
+                console.log(body);
+            });*/
+
+            /*res.redirect('/login' +
+                querystring.stringify({
+                    response_type: 'code',
+                    client_id: client_id,
+                    scope: playlistsScope,
+                    redirect_uri: redirect_uri,
+                    state: state
+                }));*/
+
+////////////////////////////////////////////////////////////////////////////////////
 
                 // we can also pass the token to the browser to make requests from there
                 res.redirect('/#' +
@@ -107,7 +151,8 @@ app.get('/callback', function(req, res) {
                         access_token: access_token,
                         refresh_token: refresh_token
                     }));
-            } else {
+            }
+            else {
                 res.redirect('/#' +
                     querystring.stringify({
                         error: 'invalid_token'

@@ -6,7 +6,6 @@
  * For more information, read
  * https://developer.spotify.com/web-api/authorization-guide/#authorization_code_flow
  */
-
 var express = require('express'); // Express web server framework
 var request = require('request'); // "Request" library
 var querystring = require('querystring');
@@ -44,7 +43,7 @@ app.get('/login', function (req, res) {
     res.cookie(stateKey, state);
 
     // your application requests authorization
-    var scope = 'user-read-private user-read-email';
+    var scope = 'user-read-private user-read-email user-library-read';
     res.redirect('https://accounts.spotify.com/authorize?' +
         querystring.stringify({
             response_type: 'code',
@@ -72,7 +71,7 @@ app.get('/callback', function (req, res) {
     }
     else {
         res.clearCookie(stateKey);
-        var authOptions = {
+        var authRequestParams = {
             url: 'https://accounts.spotify.com/api/token',
             form: {
                 code: code,
@@ -85,40 +84,33 @@ app.get('/callback', function (req, res) {
             json: true
         };
 
-        request.post(authOptions, function (error, response, body) {
+        request.post(authRequestParams, function (error, response, body) {
             if (!error && response.statusCode === 200) {
 
                 var access_token = body.access_token,
                     refresh_token = body.refresh_token;
 
-                var authRequestParams = {
+                var userRequestParams = {
                     url: 'https://api.spotify.com/v1/me',
                     headers: {'Authorization': 'Bearer ' + access_token},
                     json: true
                 };
 
                 // use the access token to access the Spotify Web API
-                request.get(authRequestParams, function (error, response, body) {
-                    var playlistsRequestParams = {
-                        url: 'https://api.spotify.com/v1/users/' + body.id + '/playlists',
+                request.get(userRequestParams, function (error, response, body) {
+                    var tracksRequestParams = {
+                        url: 'https://api.spotify.com/v1/me/tracks',
                         headers: {
-                            'Authorization': 'Bearer ' + access_token,
-                            'scope': 'playlist-read-private',
-                            'response_type': 'code',
-                            'client_id': client_id,
-                            'redirect_uri': redirect_uri,
-                            'state': state
+                            'Authorization': 'Bearer ' + access_token
                         },
                         json: true
                     };
 
                     // use the access token to access the Spotify Web API
-                    request.get(playlistsRequestParams, function (error, response, body) {
+                    request.get(tracksRequestParams, function (error, response, body) {
                         console.log(body);
                     });
                 });
-
-
 
                 // we can also pass the token to the browser to make requests from there
                 res.redirect('/#' +

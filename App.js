@@ -109,6 +109,18 @@ app.get('/callback', function (req, res) {
                     // use the access token to access the Spotify Web API
                     request.get(tracksRequestParams, function (error, response, body) {
                         console.log(body);
+
+                        var previewUrls = body.items.map(element => element.track.preview_url);
+                        function hasPreviewUrl(url) {
+                          return url != null
+                        };
+
+                        var validPreviewUrls = previewUrls.filter(hasPreviewUrl);
+                        console.log(validPreviewUrls);
+
+                        var randomTrackIndex = Math.floor((Math.random() * validPreviewUrls.length) + 0);
+                        var randomTrackPreviewUrl = validPreviewUrls[randomTrackIndex];
+                        console.log("Track preview url: " + randomTrackPreviewUrl);
                     });
                 });
 
